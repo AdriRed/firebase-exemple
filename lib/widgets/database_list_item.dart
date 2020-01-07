@@ -10,9 +10,11 @@ class DatabaseListItem extends StatelessWidget {
   String get title {
     return element.title;
   }
+
   String get content {
     return element.value;
   }
+
   final int lettersLimit = 30;
   final DatabaseElement element;
   final BuildContext context;
@@ -29,7 +31,9 @@ class DatabaseListItem extends StatelessWidget {
                 size: 40.0,
               ),
               title: Text(this.title),
-              subtitle: Text(this.content.length >= lettersLimit + 3 ? this.content.substring(0, lettersLimit) + "..." : this.content),
+              subtitle: Text(this.content.length >= lettersLimit + 3
+                  ? this.content.substring(0, lettersLimit) + "..."
+                  : this.content),
               trailing: IconButton(
                 icon: Icon(
                   Icons.delete,
@@ -85,12 +89,9 @@ class DatabaseListItem extends StatelessWidget {
   }
 
   void deleteItem() {
-    FirebaseDatabase.instance.reference().child(element.key).remove().then(
-      (el) {
-        Scaffold.of(context).showSnackBar(
-          SnackBar(content: Text("Deleted note " + element.title),)
-        );
-      }
-    );
+    FirebaseDatabase.instance.reference().child(element.key).remove();
+    Scaffold.of(context).showSnackBar(SnackBar(
+      content: Text("Deleted note " + element.title),
+    ));
   }
 }

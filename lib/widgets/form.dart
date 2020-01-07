@@ -52,7 +52,7 @@ class _DatabaseFormState extends State<DatabaseForm> {
         "value": _temporalElement.value
       });
     }
-    commit.then((val) => Navigator.of(widget.context).pop());
+    Navigator.of(widget.context).pop();
   }
 
   @override
