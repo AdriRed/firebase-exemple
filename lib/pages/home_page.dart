@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:ffi';
 
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_exemple/widgets/database_list_item.dart';
 import 'package:firebase_exemple/widgets/form.dart';
 import 'package:flutter/material.dart';
 
@@ -23,6 +24,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   List<DatabaseElement> _databaseList = new List();
+  final _animatedListKey = new GlobalKey<AnimatedListState>();
 
   @override
   void initState() {
@@ -34,6 +36,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    log("Showing " + _databaseList.length.toString() + " items");
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -52,6 +55,19 @@ class _HomePageState extends State<HomePage> {
           itemCount: _databaseList.length,
           itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(ctx, _databaseList[index]),
         ),
+        // child: AnimatedList(
+        //   key: _animatedListKey,
+        //   initialItemCount: _databaseList.length,
+        //   itemBuilder: (BuildContext context,int index,Animation<double> animation) {
+        //     log("Drawing item with index " + index.toString());
+        //     return SlideTransition(
+        //       position: animation.drive(Tween(
+        //           begin: Offset.fromDirection(1),
+        //           end: Offset.fromDirection(0))),
+        //       child: DatabaseListItem(context, _databaseList[index]),
+        //     );
+        //   },
+        // ),
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.note_add),
@@ -70,14 +86,15 @@ class _HomePageState extends State<HomePage> {
 
   void _databaseData(Event ev) {
     DataSnapshot snapshot = ev.snapshot;
-    log("Recieved data. Snapshot type is " + snapshot.value.runtimeType.toString());
-    
+    log("Recieved data. Snapshot type is " +
+        snapshot.value.runtimeType.toString());
+
     Map<dynamic, dynamic> list = snapshot.value as Map<dynamic, dynamic>;
     List<DatabaseElement> elements = new List();
     if (list != null)
-    list.forEach((k, v) {
-      elements.add(new DatabaseElement(k, v["title"], v["value"]));
-    });
+      list.forEach((k, v) {
+        elements.add(new DatabaseElement(k, v["title"], v["value"]));
+      });
 
     log("Total items of data list are: " + elements.length.toString());
 
@@ -93,93 +110,4 @@ class DatabaseElement {
   String value;
 
   DatabaseElement(this.key, this.title, this.value);
-}
-
-class DatabaseListItem extends StatelessWidget {
-  String get title {
-    return element.title;
-  }
-  String get content {
-    return element.value;
-  }
-  final int lettersLimit = 30;
-  final DatabaseElement element;
-  final BuildContext context;
-  DatabaseListItem(this.context, this.element);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      child: GestureDetector(
-        child: Card(
-          child: ListTile(
-              leading: Icon(
-                Icons.event_note,
-                size: 40.0,
-              ),
-              title: Text(this.title),
-              subtitle: Text(this.content.length >= lettersLimit + 3 ? this.content.substring(0, lettersLimit) + "..." : this.content),
-              trailing: IconButton(
-                icon: Icon(
-                  Icons.delete,
-                  size: 30,
-                ),
-                color: Colors.red,
-                onPressed: () => this.alertDelete(context),
-              )),
-        ),
-        onTap: () {
-          log("Edit element with title: " + this.title);
-          showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return DatabaseForm.edit(context, element);
-            },
-          );
-        },
-      ),
-      height: 50,
-      width: 50,
-    );
-  }
-
-  void alertDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext ctx) => AlertDialog(
-        title: Text("Really do you want to delete this item?"),
-        actions: <Widget>[
-          FlatButton(
-            child: Text(
-              "Nope",
-              style: TextStyle(color: Colors.black),
-            ),
-            onPressed: () {
-              log("Not deleted");
-              Navigator.pop(context);
-            },
-          ),
-          FlatButton(
-              child: Text(
-                "Yea boi",
-                style: TextStyle(color: Colors.red),
-              ),
-              onPressed: () {
-                deleteItem();
-                Navigator.pop(context);
-              })
-        ],
-      ),
-    );
-  }
-
-  void deleteItem() {
-    FirebaseDatabase.instance.reference().child(element.key).remove().then(
-      (el) {
-        Scaffold.of(context).showSnackBar(
-          SnackBar(content: Text("Deleted note " + element.title),)
-        );
-      }
-    );
-  }
 }
