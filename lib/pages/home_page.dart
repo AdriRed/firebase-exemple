@@ -50,8 +50,7 @@ class _HomePageState extends State<HomePage> {
         child: ListView.builder(
           itemExtent: 80,
           itemCount: _databaseList.length,
-          itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(
-              _databaseList[index].key, _databaseList[index].value),
+          itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(ctx, _databaseList[index]),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -61,7 +60,7 @@ class _HomePageState extends State<HomePage> {
           showDialog(
             context: context,
             builder: (BuildContext context) {
-              return DatabaseForm.newItem();
+              return DatabaseForm.newItem(context);
             },
           );
         },
@@ -71,40 +70,42 @@ class _HomePageState extends State<HomePage> {
 
   void _databaseData(Event ev) {
     DataSnapshot snapshot = ev.snapshot;
-    log("Recieved data. Snapshot type is " +
-        snapshot.value.runtimeType.toString());
-    if (snapshot.value.runtimeType != String) {
-      Map<dynamic, dynamic> list = snapshot.value as Map<dynamic, dynamic>;
-      List<DatabaseElement> elements = new List();
-      List<Widget> widgets = new List();
-      list.forEach((k, v) {
-        log(k + ": " + v);
-        elements.add(new DatabaseElement(k, v));
-        widgets.add(new DatabaseListItem(k, v));
-      });
+    log("Recieved data. Snapshot type is " + snapshot.value.runtimeType.toString());
+    
+    Map<dynamic, dynamic> list = snapshot.value as Map<dynamic, dynamic>;
+    List<DatabaseElement> elements = new List();
+    if (list != null)
+    list.forEach((k, v) {
+      elements.add(new DatabaseElement(k, v["title"], v["value"]));
+    });
 
-      log("Total items of data list are: " + list.length.toString());
-      log("Total items of widget list are: " + widgets.length.toString());
+    log("Total items of data list are: " + elements.length.toString());
 
-      this.setState(() {
-        _databaseList = elements;
-      });
-    }
+    this.setState(() {
+      _databaseList = elements;
+    });
   }
 }
 
 class DatabaseElement {
   String key;
+  String title;
   String value;
 
-  DatabaseElement(this.key, this.value);
+  DatabaseElement(this.key, this.title, this.value);
 }
 
 class DatabaseListItem extends StatelessWidget {
-  final String title;
-  final String content;
-
-  DatabaseListItem(this.title, this.content);
+  String get title {
+    return element.title;
+  }
+  String get content {
+    return element.value;
+  }
+  final int lettersLimit = 30;
+  final DatabaseElement element;
+  final BuildContext context;
+  DatabaseListItem(this.context, this.element);
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +118,7 @@ class DatabaseListItem extends StatelessWidget {
                 size: 40.0,
               ),
               title: Text(this.title),
-              subtitle: Text(this.content),
+              subtitle: Text(this.content.length >= lettersLimit + 3 ? this.content.substring(0, lettersLimit) + "..." : this.content),
               trailing: IconButton(
                 icon: Icon(
                   Icons.delete,
@@ -127,7 +128,15 @@ class DatabaseListItem extends StatelessWidget {
                 onPressed: () => this.alertDelete(context),
               )),
         ),
-        // child: Text(this.content, style: TextStyle(color: Colors.black),),
+        onTap: () {
+          log("Edit element with title: " + this.title);
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return DatabaseForm.edit(context, element);
+            },
+          );
+        },
       ),
       height: 50,
       width: 50,
@@ -165,6 +174,12 @@ class DatabaseListItem extends StatelessWidget {
   }
 
   void deleteItem() {
-    log("Delete item with key " + this.title);
+    FirebaseDatabase.instance.reference().child(element.key).remove().then(
+      (el) {
+        Scaffold.of(context).showSnackBar(
+          SnackBar(content: Text("Deleted note " + element.title),)
+        );
+      }
+    );
   }
 }

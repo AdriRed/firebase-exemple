@@ -1,15 +1,17 @@
 import 'dart:developer';
 
+import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_exemple/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
 class DatabaseForm extends StatefulWidget {
   DatabaseElement element;
-  DatabaseForm.newItem() {
+  BuildContext context;
+  DatabaseForm.newItem(this.context) {
     element = null;
   }
 
-  DatabaseForm.edit(DatabaseElement element) {
+  DatabaseForm.edit(this.context, DatabaseElement element) {
     this.element = element;
   }
 
@@ -20,18 +22,37 @@ class DatabaseForm extends StatefulWidget {
 class _DatabaseFormState extends State<DatabaseForm> {
   final _formKey = GlobalKey<FormState>();
 
+  DatabaseElement _prevElement;
   DatabaseElement _temporalElement;
-
+  bool isNew;
+  bool _locked = true;
   _DatabaseFormState(DatabaseElement element) {
+    isNew = element == null;
+    _prevElement = element;
     _temporalElement = 
-      element == null ?
-        new DatabaseElement("", "") 
+      isNew ?
+        new DatabaseElement("", "", "") 
         :
-        new DatabaseElement(element.key, element.value);
+        new DatabaseElement(element.key, element.title, element.value);
   }
 
   void sendToDatabase() {
-    log("Send element key: " + _temporalElement.key + ", value: " + _temporalElement.value);
+    var dbroot = FirebaseDatabase.instance.reference().root();
+    Future<void> commit;
+    if (isNew) {
+      var reference = dbroot.push();
+      commit = reference.set(<String, String>{
+        "title": _temporalElement.title,
+        "value": _temporalElement.value
+      });
+    } else {
+      var reference = dbroot.child(_prevElement.key).reference();
+      commit = reference.update({
+        "title": _temporalElement.title,
+        "value": _temporalElement.value
+      });
+    }
+    commit.then((val) => Navigator.of(widget.context).pop());
   }
 
   @override
@@ -45,14 +66,16 @@ class _DatabaseFormState extends State<DatabaseForm> {
             Padding(
               padding: EdgeInsets.all(8.0),
               child: TextFormField(
-                initialValue: _temporalElement.key,
+                initialValue: _temporalElement.title,
                 decoration: InputDecoration(labelText: "Title"),
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a title.';
                   }
                 },
-                onSaved: (value) => this.setState(() {_temporalElement.key = value;}),
+                maxLines: 1,
+                enabled: _locked,
+                onSaved: (value) => this.setState(() {_temporalElement.title = value;}),
               ),
             ),
             Padding(
@@ -60,11 +83,13 @@ class _DatabaseFormState extends State<DatabaseForm> {
               child: TextFormField(
                 initialValue: _temporalElement.value,
                 decoration: InputDecoration(labelText: "Note"),
+                maxLines: 3,
                 validator: (value) {
                   if (value.isEmpty) {
                     return 'Please enter a value.';
                   }
                 },
+                enabled: _locked,
                 onSaved: (value) => this.setState(() {_temporalElement.value = value;}),
               ),
             ),
@@ -73,6 +98,7 @@ class _DatabaseFormState extends State<DatabaseForm> {
               child: RaisedButton(
                 child: Text("Save"),
                 onPressed: () {
+                  this.setState(() {_locked = !_locked;});
                   final form = _formKey.currentState;
                   if (form.validate()) {
                     form.save();
