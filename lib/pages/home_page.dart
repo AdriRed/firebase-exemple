@@ -46,12 +46,12 @@ class _HomePageState extends State<HomePage> {
         title: Text("Send to database"),
       ),
       body: Center(
-        child: ListView.builder(
-          itemExtent: 80,
-          itemCount: _databaseList.length,
-          itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(_databaseList[index].key, _databaseList[index].value),
-        )
-      ),
+          child: ListView.builder(
+        itemExtent: 80,
+        itemCount: _databaseList.length,
+        itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(
+            _databaseList[index].key, _databaseList[index].value),
+      )),
     );
   }
 
@@ -98,18 +98,60 @@ class DatabaseListItem extends StatelessWidget {
       child: GestureDetector(
         child: Card(
           child: ListTile(
-            leading: Icon(
-              Icons.event_note,
-              size: 40.0,
-            ),
-            title: Text(this.title),
-            subtitle: Text(this.content),
-          ),
+              leading: Icon(
+                Icons.event_note,
+                size: 40.0,
+              ),
+              title: Text(this.title),
+              subtitle: Text(this.content),
+              trailing: IconButton(
+                icon: Icon(
+                  Icons.delete,
+                  size: 30,
+                ),
+                color: Colors.red,
+                onPressed: () => this.alertDelete(context),
+              )),
         ),
         // child: Text(this.content, style: TextStyle(color: Colors.black),),
       ),
       height: 50,
       width: 50,
     );
+  }
+
+  void alertDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: Text("Really do you want to delete this item?"),
+        actions: <Widget>[
+          FlatButton(
+            child: Text(
+              "Nope",
+              style: TextStyle(color: Colors.black),
+            ),
+            onPressed: () {
+              log("Not deleted");
+              Navigator.pop(context);
+            },
+          ),
+          FlatButton(
+            child: Text(
+              "Yea boi",
+              style: TextStyle(color: Colors.red),
+            ),
+            onPressed: () {
+              deleteItem();
+              Navigator.pop(context);
+            }
+          )
+        ],
+      ),
+    );
+  }
+
+  void deleteItem() {
+    log("Delete item with key " + this.title);
   }
 }
