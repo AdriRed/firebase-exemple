@@ -4,7 +4,7 @@ import 'dart:ffi';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
-class HomePage extends StatefulWidget{
+class HomePage extends StatefulWidget {
   HomePage({Key key}) : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
@@ -16,23 +16,19 @@ class HomePage extends StatefulWidget{
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
 
-
   @override
   _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> 
-{
-  Map<String, String> _databaseList = new Map();
+class _HomePageState extends State<HomePage> {
+  List<DatabaseElement> _databaseList = new List();
 
   @override
   void initState() {
     super.initState();
     log("Inited state");
-  }
-
-  Widget get _llista {
-    
+    DatabaseReference dbref = FirebaseDatabase.instance.reference().root();
+    dbref.onValue.listen(_databaseData);
   }
 
   @override
@@ -50,34 +46,70 @@ class _HomePageState extends State<HomePage>
         title: Text("Send to database"),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: _llista
-        ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _databaseUpdate,
-        tooltip: 'Increment',
-        child: Icon(Icons.cloud_download),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        child: ListView.builder(
+          itemExtent: 80,
+          itemCount: _databaseList.length,
+          itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(_databaseList[index].key, _databaseList[index].value),
+        )
+      ),
     );
-  }
-
-
-  void _databaseUpdate() {
-    DatabaseReference dbref = FirebaseDatabase.instance.reference().root();
-    dbref.onValue.listen(_databaseData);
   }
 
   void _databaseData(Event ev) {
     DataSnapshot snapshot = ev.snapshot;
-      log("Recieved data. Snapshot type is " + snapshot.value.runtimeType.toString());
-      if (snapshot.value.runtimeType != String) {
-        Map<dynamic, dynamic> list = snapshot.value as Map<dynamic, dynamic>;
-        log("Not string");
-        list.forEach((k, v) {
-          log("Key type " + k.runtimeType.toString());
-          log("Value type " + k.runtimeType.toString());
-        });
-      }
+    log("Recieved data. Snapshot type is " +
+        snapshot.value.runtimeType.toString());
+    if (snapshot.value.runtimeType != String) {
+      Map<dynamic, dynamic> list = snapshot.value as Map<dynamic, dynamic>;
+      List<DatabaseElement> elements = new List();
+      List<Widget> widgets = new List();
+      list.forEach((k, v) {
+        log(k + ": " + v);
+        elements.add(new DatabaseElement(k, v));
+        widgets.add(new DatabaseListItem(k, v));
+      });
+
+      log("Total items of data list are: " + list.length.toString());
+      log("Total items of widget list are: " + widgets.length.toString());
+
+      this.setState(() {
+        _databaseList = elements;
+      });
+    }
+  }
+}
+
+class DatabaseElement {
+  final String key;
+  final String value;
+
+  DatabaseElement(this.key, this.value);
+}
+
+class DatabaseListItem extends StatelessWidget {
+  final String title;
+  final String content;
+
+  DatabaseListItem(this.title, this.content);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: GestureDetector(
+        child: Card(
+          child: ListTile(
+            leading: Icon(
+              Icons.event_note,
+              size: 40.0,
+            ),
+            title: Text(this.title),
+            subtitle: Text(this.content),
+          ),
+        ),
+        // child: Text(this.content, style: TextStyle(color: Colors.black),),
+      ),
+      height: 50,
+      width: 50,
+    );
   }
 }
