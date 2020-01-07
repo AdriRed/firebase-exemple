@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:ffi';
 
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_exemple/widgets/form.dart';
 import 'package:flutter/material.dart';
 
 class HomePage extends StatefulWidget {
@@ -46,12 +47,25 @@ class _HomePageState extends State<HomePage> {
         title: Text("Send to database"),
       ),
       body: Center(
-          child: ListView.builder(
-        itemExtent: 80,
-        itemCount: _databaseList.length,
-        itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(
-            _databaseList[index].key, _databaseList[index].value),
-      )),
+        child: ListView.builder(
+          itemExtent: 80,
+          itemCount: _databaseList.length,
+          itemBuilder: (BuildContext ctx, int index) => DatabaseListItem(
+              _databaseList[index].key, _databaseList[index].value),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.note_add),
+        onPressed: () {
+          log("Add note");
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return DatabaseForm.newItem();
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -80,8 +94,8 @@ class _HomePageState extends State<HomePage> {
 }
 
 class DatabaseElement {
-  final String key;
-  final String value;
+  String key;
+  String value;
 
   DatabaseElement(this.key, this.value);
 }
@@ -137,15 +151,14 @@ class DatabaseListItem extends StatelessWidget {
             },
           ),
           FlatButton(
-            child: Text(
-              "Yea boi",
-              style: TextStyle(color: Colors.red),
-            ),
-            onPressed: () {
-              deleteItem();
-              Navigator.pop(context);
-            }
-          )
+              child: Text(
+                "Yea boi",
+                style: TextStyle(color: Colors.red),
+              ),
+              onPressed: () {
+                deleteItem();
+                Navigator.pop(context);
+              })
         ],
       ),
     );
