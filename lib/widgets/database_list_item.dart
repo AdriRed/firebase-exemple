@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:math' as Math;
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_exemple/pages/home_page.dart';
@@ -31,8 +32,13 @@ class DatabaseListItem extends StatelessWidget {
                 size: 40.0,
               ),
               title: Text(this.title),
-              subtitle: Text(this.content.length >= lettersLimit + 3
-                  ? this.content.substring(0, lettersLimit) + "..."
+              subtitle: Text(this.content.length >= lettersLimit + 3 ||
+                      this.content.contains("\n")
+                  ? this.content.substring(
+                            0,
+                            this.content.contains("\n") ? this.content.indexOf("\n") : lettersLimit,
+                          ) +
+                      "..."
                   : this.content),
               trailing: IconButton(
                 icon: Icon(
